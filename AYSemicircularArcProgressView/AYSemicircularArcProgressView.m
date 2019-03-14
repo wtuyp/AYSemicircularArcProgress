@@ -57,7 +57,6 @@
 - (void)loadSublayers
 {
     [_gradientLayer removeFromSuperlayer];
-    [_progressLayer removeFromSuperlayer];
     
     _gradientLayer = [CAGradientLayer layer];
     _gradientLayer.frame = self.bounds;
