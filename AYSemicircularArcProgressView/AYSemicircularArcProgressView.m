@@ -12,6 +12,7 @@
 
 @property (nonatomic, strong) CAGradientLayer *gradientLayer;
 @property (nonatomic, strong) CAShapeLayer *progressLayer;
+@property (nonatomic, strong) CAShapeLayer *trackLayer;
 
 @end
 
@@ -43,7 +44,7 @@
 
 - (void)initDefaultValues
 {
-    self.arcWith = 10.0;
+    self.arcWidth = 10.0;
     
     self.gradientStartColor = [UIColor colorWithRed:0 / 255.0 green:201.0 / 255.0 blue:255.0 / 255.0 alpha:1];
     self.gradientEndColor = [UIColor colorWithRed:146.0 / 255.0 green:254.0 / 255.0 blue:157.0 / 255.0 alpha:1.0];
@@ -56,38 +57,53 @@
 
 - (void)loadSublayers
 {
-    [_gradientLayer removeFromSuperlayer];
+    if (!_trackLayer) {
+        _trackLayer = [CAShapeLayer layer];
+        _trackLayer.fillColor = [UIColor clearColor].CGColor;
+        _trackLayer.lineCap = kCALineCapRound;
+        [self.layer addSublayer:_trackLayer];
+    }
+    _trackLayer.lineWidth = self.arcWidth;
+    _trackLayer.strokeColor = _trackColor.CGColor;
+    _trackLayer.frame = self.bounds;
     
-    _gradientLayer = [CAGradientLayer layer];
+    if (!_gradientLayer) {
+        _gradientLayer = [CAGradientLayer layer];
+        _gradientLayer.startPoint = CGPointMake(0, 0.5);
+        _gradientLayer.endPoint = CGPointMake(1, 0.5);
+        [self.layer addSublayer:_gradientLayer];
+    }
     _gradientLayer.frame = self.bounds;
-    _gradientLayer.startPoint = CGPointMake(0, 0.5);
-    _gradientLayer.endPoint = CGPointMake(1, 0.5);
     
-    _gradientLayer.colors = @[(id)self.gradientStartColor.CGColor, (id)self.gradientEndColor.CGColor];
-    [self.layer addSublayer:_gradientLayer];
+    if (_progressColor) {
+        _gradientLayer.colors = @[(id)self.progressColor.CGColor, (id)self.progressColor.CGColor];
+    } else {
+        _gradientLayer.colors = @[(id)self.gradientStartColor.CGColor, (id)self.gradientEndColor.CGColor];
+    }
+    
+    if (!_progressLayer) {
+        _progressLayer = [CAShapeLayer layer];
+        _progressLayer.fillColor = [UIColor clearColor].CGColor;
+        _progressLayer.strokeColor = [UIColor whiteColor].CGColor;
+        _progressLayer.lineCap = kCALineCapRound;
+        _progressLayer.strokeEnd = 0.0;
+    }
+    _progressLayer.frame = self.bounds;
+    _progressLayer.lineWidth = self.arcWidth;
     
     CGFloat radius = self.radius;
     if (radius > self.frame.size.width / 2.0 || radius == 0.0) {
         radius = self.frame.size.width / 2.0;
     }
+    radius = radius - self.arcWidth / 2.0;
     
-    radius = radius - self.arcWith / 2.0;
+    CGPoint center = CGPointMake(self.frame.size.width / 2.0, self.frame.size.height - self.arcWidth / 2.0);
+    UIBezierPath *path = [UIBezierPath bezierPathWithArcCenter:center radius:radius
+                                                    startAngle:M_PI endAngle:M_PI + M_PI clockwise:YES];
     
-    CGPoint center = CGPointMake(self.frame.size.width / 2.0, self.frame.size.height - self.arcWith / 2.0);
-    CGFloat startAngle = M_PI;
-    CGFloat endAngle = startAngle + M_PI;
-    
-    _progressLayer = [CAShapeLayer layer];
-    _progressLayer.frame = self.bounds;
-    _progressLayer.fillColor = [[UIColor clearColor] CGColor];
-    _progressLayer.strokeColor = [[UIColor whiteColor] CGColor];
-    _progressLayer.lineCap = kCALineCapRound;
-    _progressLayer.lineWidth = self.arcWith;
-    
-    UIBezierPath *path = [UIBezierPath bezierPathWithArcCenter:center radius:radius startAngle:startAngle endAngle:endAngle clockwise:YES];
+    _trackLayer.path = path.CGPath;
     _progressLayer.path = path.CGPath;
     
-    _progressLayer.strokeEnd = 0.0;
     _gradientLayer.mask = _progressLayer;
 }
 
